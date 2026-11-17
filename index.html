@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b3d5c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<title>Höhe</title>
+<style>
+  body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+       font-family:system-ui,sans-serif;background:#0b3d5c;color:#fff;text-align:center;padding:1rem;box-sizing:border-box}
+  #hoehe{font-size:4.5rem;font-weight:700;margin:.2em 0}
+  #info{opacity:.8;min-height:3em}
+  button{font-size:1.3rem;padding:.8em 1.6em;border:0;border-radius:2em;background:#ffb703;color:#000;font-weight:600}
+  button:disabled{opacity:.6}
+</style>
+</head>
+<body>
+  <div>Höhe über Meeresspiegel</div>
+  <div id="hoehe">–</div>
+  <div id="info">Wird ermittelt …</div>
+  <button id="btn">Höhe messen</button>
+
+<script>
+const out = document.getElementById('hoehe');
+const info = document.getElementById('info');
+const btn = document.getElementById('btn');
+
+function messen() {
+  if (!('geolocation' in navigator)) { info.textContent = 'Geolocation wird nicht unterstützt.'; return; }
+  btn.disabled = true;
+  info.textContent = 'GPS-Signal wird gesucht …';
+  navigator.geolocation.getCurrentPosition(pos => {
+    const c = pos.coords;
+    if (c.altitude === null) {
+      out.textContent = '–';
+      info.textContent = 'Gerät liefert keine Höhenangabe (GPS-Empfang drinnen schlecht?).';
+    } else {
+      out.textContent = Math.round(c.altitude) + ' m';
+      const acc = c.altitudeAccuracy != null ? ' (±' + Math.round(c.altitudeAccuracy) + ' m)' : '';
+      info.textContent = 'Genauigkeit' + acc + ' · ' + new Date(pos.timestamp).toLocaleTimeString('de-DE');
+    }
+    btn.disabled = false;
+  }, err => {
+    const msg = {1:'Standortzugriff verweigert. Bitte in den Browser-/App-Einstellungen erlauben.',
+                 2:'Standort nicht verfügbar.', 3:'Zeitüberschreitung – bitte erneut versuchen.'};
+    info.textContent = msg[err.code] || err.message;
+    btn.disabled = false;
+  }, {enableHighAccuracy:true, timeout:30000, maximumAge:0});
+}
+
+btn.addEventListener('click', messen);
+messen(); // automatisch beim Start
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>
